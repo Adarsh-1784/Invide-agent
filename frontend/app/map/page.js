@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { AlertCircle, Flame, Filter } from 'lucide-react'
+import 'leaflet/dist/leaflet.css'
 
 // Import Leaflet dynamically since it needs window at runtime
 const MapContainer = dynamic(
@@ -42,9 +43,6 @@ export default function CampusMap() {
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/hotspots`)
             .then(res => res.json())
             .then(data => setHotspots(data.hotspots || []))
-
-        // Import leaflet css
-        import('leaflet/dist/leaflet.css')
     }, [])
 
     if (!isClient) return <div className="container" style={{ padding: '2rem 0' }}>Loading map...</div>

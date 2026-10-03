@@ -1,6 +1,6 @@
 'use client'
 import { useState, useRef, useEffect } from 'react'
-import { Send, Bot, User, Loader2, Lightbulb, Map as MapIcon, BarChart2 } from 'lucide-react'
+import { Send, Bot, User, Loader2, Lightbulb, CheckCircle, Map as MapIcon, BarChart2 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 
 export default function AgentChat() {
