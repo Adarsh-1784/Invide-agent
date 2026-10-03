@@ -34,6 +34,18 @@ export default function CampusMap() {
     useEffect(() => {
         setIsClient(true)
 
+        // Fix Leaflet's default icon paths by replacing them with foolproof CSS markers
+        import('leaflet').then(L => {
+            const customIcon = L.divIcon({
+                className: 'custom-leaflet-marker',
+                html: '<div style="background-color: var(--primary, #00C9B7); width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 6px rgba(0,0,0,0.8);"></div>',
+                iconSize: [14, 14],
+                iconAnchor: [7, 7],
+                popupAnchor: [0, -10]
+            });
+            L.Marker.prototype.options.icon = customIcon;
+        })
+
         // Fetch reports
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/reports?limit=50`)
             .then(res => res.json())
@@ -46,23 +58,6 @@ export default function CampusMap() {
     }, [])
 
     if (!isClient) return <div className="container" style={{ padding: '2rem 0' }}>Loading map...</div>
-
-    // We need to fix the default Leaflet icons in a Next.js environment
-    const getIcon = (type, severity = 0) => {
-        if (typeof window === 'undefined') return null
-        import('leaflet').then(L => {
-            // Setup custom icons
-            delete L.Icon.Default.prototype._getIconUrl;
-            L.Icon.Default.mergeOptions({
-                iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-                iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-            });
-        })
-
-        // Returning null here and using the global custom icons defined later if we need different colors
-        return null
-    }
 
     return (
         <div className="container animate-fade-in" style={{ height: 'calc(100vh - 12rem)', display: 'flex', flexDirection: 'column' }}>
@@ -98,17 +93,16 @@ export default function CampusMap() {
             </div>
 
             <div className="glass-panel" style={{ flex: 1, padding: 0, overflow: 'hidden', position: 'relative' }}>
-                {/* We use a key to force re-render if needed, but normally not required */}
                 <MapContainer
                     center={center}
                     zoom={16}
                     style={{ height: '100%', width: '100%', background: '#0D1117' }}
                     className="dark-map"
                 >
-                    {/* CartoDB Dark Matter for dark theme map */}
+                    {/* Using Standard OSM, and we'll apply a CSS filter via global styles to make it dark */}
                     <TileLayer
-                        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                     />
 
                     {/* Render Hotspots */}
@@ -157,6 +151,16 @@ export default function CampusMap() {
                     </div>
                 </div>
             </div>
+
+            <style jsx global>{`
+                /* Invert OSM colors to create a beautiful dark map that matches the UI perfectly */
+                .leaflet-layer,
+                .leaflet-control-zoom-in,
+                .leaflet-control-zoom-out,
+                .leaflet-control-attribution {
+                    filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+                }
+            `}</style>
         </div>
     )
 }
