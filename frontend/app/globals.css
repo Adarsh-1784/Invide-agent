@@ -1,0 +1,165 @@
+:root {
+  --background: #0D1117;
+  --foreground: #C9D1D9;
+  --card: #161B22;
+  --card-foreground: #C9D1D9;
+  --border: #30363D;
+  --primary: #00C9B7; /* Hacktoberfest Teal */
+  --primary-hover: #00E3D0;
+  --primary-foreground: #000000;
+  --secondary: #FF6B6B; /* Hacktoberfest Coral/Red */
+  --secondary-hover: #FF8787;
+  --secondary-foreground: #FFFFFF;
+  --accent: #4ECDC4;
+  --muted: #21262D;
+  --muted-foreground: #8B949E;
+  --success: #6BCB77;
+  --warning: #FFD93D;
+  --danger: #FF6B6B;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.glass-panel {
+  background: rgba(22, 27, 34, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.gradient-text {
+  background: linear-gradient(90deg, #00C9B7 0%, #4ECDC4 50%, #FF6B6B 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+/* Leaflet Map overrides for dark theme */
+.leaflet-container {
+  background: var(--card) !important;
+  font-family: inherit !important;
+}
+.leaflet-popup-content-wrapper {
+  background: var(--card) !important;
+  color: var(--foreground) !important;
+  border: 1px solid var(--border);
+}
+.leaflet-popup-tip {
+  background: var(--card) !important;
+  border-top: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+}
+
+/* General Layout Utils */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  font-size: 0.95rem;
+  gap: 0.5rem;
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background-color: var(--muted);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+}
+
+.btn-secondary:hover {
+  background-color: var(--border);
+}
+
+.input-field {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--foreground);
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 99px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
