@@ -4,7 +4,7 @@ import { ResilientLLM, ProviderRegistry } from 'resilient-llm';
 // Register Coral Bricks as a custom OpenAI-compatible provider
 // The user can define CORAL_BRICKS_BASE_URL in their .env
 ProviderRegistry.configure('coralbricks', {
-    baseUrl: process.env.CORAL_BRICKS_BASE_URL || 'https://api.coralbricks.com/v1',
+    baseUrl: process.env.CORAL_BRICKS_BASE_URL || 'https://inference.coralbricks.ai/v1',
     type: 'openai-compatible' // Instructs resilient-llm to use OpenAI format
 });
 
