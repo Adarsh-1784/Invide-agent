@@ -290,6 +290,25 @@ async def agent_chat(body: dict):
     }
 
 
+# ─── Tools Proxy ──────────────────────────────────────────
+
+@router.post("/tools/execute")
+async def execute_tool_proxy(body: dict):
+    """Proxy tool execution from Next.js resilient-llm orchestrator."""
+    tool_name = body.get("tool_name", "")
+    tool_args = body.get("tool_args", {})
+    
+    if not tool_name:
+        raise HTTPException(status_code=400, detail="tool_name is required")
+        
+    try:
+        # execute_tool is already imported from tools
+        result = execute_tool(tool_name, tool_args)
+        return {"result": result}
+    except Exception as e:
+        return {"error": f"Failed to execute {tool_name}: {str(e)}"}
+
+
 # ─── Image Analysis ─────────────────────────────────────
 
 @router.post("/analyze-image")
