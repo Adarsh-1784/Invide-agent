@@ -50,6 +50,10 @@ export default function AgentChat() {
 
             const data = await res.json()
 
+            if (!res.ok) {
+                throw new Error(data.error || 'Server error connecting to AI Provider.');
+            }
+
             setMessages(prev => [
                 ...prev,
                 {
@@ -62,7 +66,7 @@ export default function AgentChat() {
 
         } catch (err) {
             console.error(err)
-            setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, I encountered an error connecting to the server.' }])
+            setMessages(prev => [...prev, { role: 'assistant', content: `**Error:** ${err.message || 'Sorry, I encountered an error connecting to the server.'}` }])
         } finally {
             setIsLoading(false)
         }

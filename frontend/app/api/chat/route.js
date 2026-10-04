@@ -67,7 +67,7 @@ export async function POST(req) {
 
         const llm = new ResilientLLM({
             aiService: 'coralbricks',
-            model: 'deepseek-v4-lite',
+            model: 'deepseek-v4.1-flash-fast',
             apiKey: apiKey,
             maxTokens: 2048,
             temperature: 0.7,
