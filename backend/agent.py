@@ -491,6 +491,9 @@ def run_agent_coral(user_message: str, conversation_history: list = None) -> dic
         
         # Resilient LLM Pattern Implementation
         response_data = None
+        last_error_text = ""
+        last_status = 500
+        
         for retry in range(MAX_RETRIES):
             try:
                 resp = requests.post(f"{base_url}/chat/completions", headers=headers, json=payload, timeout=30)
@@ -498,19 +501,34 @@ def run_agent_coral(user_message: str, conversation_history: list = None) -> dic
                     response_data = resp.json()
                     break
                 else:
+                    last_status = resp.status_code
+                    last_error_text = resp.text
                     print(f"  [Coral Error] HTTP {resp.status_code}: {resp.text}")
                     if retry < MAX_RETRIES - 1:
                         time.sleep(2 ** retry) # Exponential backoff
             except Exception as e:
+                last_error_text = str(e)
                 print(f"  [Coral Network Error] {str(e)}")
                 if retry < MAX_RETRIES - 1:
                     time.sleep(2 ** retry)
 
         if not response_data:
-            print("[Agent] Coral API Exhausted Retries. Falling back to DEMO")
-            if round_num == 1:
-                return run_agent_demo(user_message)
-            break
+            print("[Agent] Coral API Exhausted Retries. Reporting failure to UI.")
+            failure_msg = (
+                f"### ⚠️ Agent Connection Error\n"
+                f"I attempted to reach the Coral Bricks API but it completely failed to respond after {MAX_RETRIES} retries.\n\n"
+                f"**Status Code:** `{last_status}`\n"
+                f"**Error Details:**\n```json\n{last_error_text}\n```\n\n"
+                f"*Hint: A 401 error means your API key (`{api_key}`) is incorrect or invalid. Please fix it in your `.env` file.*"
+            )
+            return {
+                "response": failure_msg,
+                "tool_calls": tool_calls_made,
+                "rounds": round_num,
+                "charts": [],
+                "maps": [],
+                "mode": "coralbricks_error"
+            }
             
         choice = response_data.get("choices", [{}])[0]
         msg = choice.get("message", {})
