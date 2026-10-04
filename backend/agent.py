@@ -11,7 +11,10 @@ Agent Workflow:
 """
 import json
 import re
+import os
+import time
 import random
+import requests
 from datetime import datetime
 
 from config import get_bedrock_client, BEDROCK_MODEL_ID, DEMO_MODE
@@ -435,13 +438,141 @@ Ask me anything about campus waste management!""")
     }
 
 
+def run_agent_coral(user_message: str, conversation_history: list = None) -> dict:
+    """Run the agent using Coral Bricks Inference API with resilient LLM logic."""
+    api_key = os.environ.get("CORAL_BRICKS_API_KEY", "cb_XUvfFDd2GjOR9jzYG5a6TPvuEXG9K.....")
+    base_url = os.environ.get("CORAL_BRICKS_BASE_URL", "https://inference.coralbricks.ai/v1")
+    model = "deepseek-v4.1-flash-fast"
+    
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+    
+    system_prompt = build_system_prompt()
+    messages = [{"role": "system", "content": system_prompt}]
+    
+    if conversation_history:
+        for msg in conversation_history[-6:]:
+            # Clean content if it's deeply nested from bedrock format
+            if isinstance(msg.get("content"), list):
+                messages.append({"role": msg.get("role", "user"), "content": msg["content"][0].get("text", "")})
+            else:
+                messages.append({"role": msg.get("role", "user"), "content": msg.get("content", "")})
+            
+    messages.append({"role": "user", "content": user_message})
+    
+    openai_tools = []
+    for tool_def in TOOL_DEFINITIONS:
+        openai_tools.append({
+            "type": "function",
+            "function": {
+                "name": tool_def["name"],
+                "description": tool_def["description"],
+                "parameters": tool_def["input_schema"]
+            }
+        })
+        
+    tool_calls_made = []
+    final_response = ""
+    charts = []
+    maps = []
+    
+    MAX_RETRIES = 3
+    
+    for round_num in range(1, MAX_ROUNDS + 1):
+        payload = {
+            "model": model,
+            "messages": messages,
+            "tools": openai_tools,
+            "temperature": 0.7,
+            "max_tokens": 2048
+        }
+        
+        # Resilient LLM Pattern Implementation
+        response_data = None
+        for retry in range(MAX_RETRIES):
+            try:
+                resp = requests.post(f"{base_url}/chat/completions", headers=headers, json=payload, timeout=30)
+                if resp.status_code == 200:
+                    response_data = resp.json()
+                    break
+                else:
+                    print(f"  [Coral Error] HTTP {resp.status_code}: {resp.text}")
+                    if retry < MAX_RETRIES - 1:
+                        time.sleep(2 ** retry) # Exponential backoff
+            except Exception as e:
+                print(f"  [Coral Network Error] {str(e)}")
+                if retry < MAX_RETRIES - 1:
+                    time.sleep(2 ** retry)
+
+        if not response_data:
+            print("[Agent] Coral API Exhausted Retries. Falling back to DEMO")
+            if round_num == 1:
+                return run_agent_demo(user_message)
+            break
+            
+        choice = response_data.get("choices", [{}])[0]
+        msg = choice.get("message", {})
+        
+        if msg.get("content"):
+            final_response += msg["content"]
+            messages.append({"role": "assistant", "content": msg["content"]})
+            
+        tool_calls = msg.get("tool_calls", [])
+        if tool_calls:
+            if not msg.get("content"):
+                messages.append({"role": "assistant", "content": None, "tool_calls": tool_calls})
+            
+            for tc in tool_calls:
+                func_name = tc["function"]["name"]
+                func_args = json.loads(tc["function"]["arguments"])
+                
+                print(f"  [Agent Round {round_num}] Calling tool (Coral): {func_name}")
+                result = execute_tool(func_name, func_args)
+                
+                if isinstance(result, dict):
+                    if "chart_url" in result:
+                        charts.append(result["chart_url"])
+                    if "map_url" in result:
+                        maps.append(result["map_url"])
+                        
+                tool_calls_made.append({
+                    "round": round_num,
+                    "tool": func_name,
+                    "input": func_args,
+                    "output_summary": str(result)[:200]
+                })
+                
+                messages.append({
+                    "role": "tool",
+                    "tool_call_id": tc["id"],
+                    "name": func_name,
+                    "content": json.dumps(result)
+                })
+            
+            # Continue the while loop for another round with tool data
+            continue
+            
+        break
+        
+    return {
+        "response": final_response or "I reached my maximum tool limits and could not resolve your query.",
+        "tool_calls": tool_calls_made,
+        "rounds": len(tool_calls_made) + 1,
+        "charts": charts,
+        "maps": maps,
+        "mode": "coralbricks_deepseek"
+    }
+
+
 def run_agent(user_message: str, conversation_history: list = None) -> dict:
     """Main agent entry point. Uses Bedrock if configured, else demo mode."""
     print(f"\n[Agent] Query: {user_message[:100]}")
 
-    if DEMO_MODE or not get_bedrock_client():
+    if DEMO_MODE:
         print("[Agent] Running in DEMO mode")
         return run_agent_demo(user_message)
     else:
-        print("[Agent] Running with Amazon Bedrock")
-        return run_agent_bedrock(user_message, conversation_history)
+        print("[Agent] Running with Coral Bricks (Resilient-LLM Pattern)")
+        return run_agent_coral(user_message, conversation_history)
